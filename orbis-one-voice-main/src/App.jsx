@@ -1,67 +1,75 @@
-import { useState } from 'react';
-import { GoogleLogin, googleLogout } from '@react-oauth/google';
-import jwt_decode from "jwt-decode";
+import React, { useState, useEffect } from 'react';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import jwt_decode from 'jwt-decode';
 
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [language, setLanguage] = useState('');
-  
-  const speak = (text, lang = 'en-IN') => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang;
+const languages = {
+  Hindi: 'नमस्ते',
+  English: 'Hello',
+  Tamil: 'வணக்கம்',
+  Telugu: 'నమస్కారం',
+  Kannada: 'ನಮಸ್ಕಾರ',
+  Malayalam: 'നമസ്കാരം',
+  Marathi: 'नमस्कार',
+  Gujarati: 'નમસ્તે',
+  Punjabi: 'ਸਤ ਸ੍ਰੀ ਅਕਾਲ',
+  Bengali: 'নমস্কার',
+  Odia: 'ନମସ୍କାର',
+  Assamese: 'নমস্কাৰ',
+  Urdu: 'سلام',
+  Bhojpuri: 'प्रणाम',
+};
+
+const App = () => {
+  const [userName, setUserName] = useState('');
+  const [selectedLang, setSelectedLang] = useState('English');
+
+  const speak = (message) => {
+    const utterance = new SpeechSynthesisUtterance(message);
+    utterance.lang = 'hi-IN'; // India voice
     speechSynthesis.speak(utterance);
   };
 
-  const onLoginSuccess = (credentialResponse) => {
-    const decoded = jwt_decode(credentialResponse.credential);
-    setUser({
-      name: decoded.name,
-      email: decoded.email,
-      picture: decoded.picture
-    });
+  const greetUser = () => {
+    const greeting = languages[selectedLang] || languages['English'];
+    const fullGreeting = `${greeting} ${userName}! Welcome to Orbis One.`;
+    speak(fullGreeting);
   };
 
-  const onLanguageSelect = (e) => {
-    setLanguage(e.target.value);
-    if (user) {
-      const welcomeText = `Welcome, ${user.name}, to Orbis One.`;
-      speak(welcomeText, e.target.value);
-    }
-  };
+  useEffect(() => {
+    if (userName) greetUser();
+  }, [userName, selectedLang]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      {!user ? (
-        <GoogleLogin onSuccess={onLoginSuccess} onError={() => console.log("Login Failed")} />
-      ) : (
-        <div className="text-center">
-          <h1 className="text-xl font-bold">Hello, {user.name}!</h1>
-          <img src={user.picture} alt="User" className="rounded-full w-20 h-20 mx-auto my-4" />
-          <p className="text-gray-600">{user.email}</p>
-
-          <select onChange={onLanguageSelect} className="mt-4 p-2 border rounded">
-            <option value="">Select Language</option>
-            <option value="en-IN">English (India)</option>
-            <option value="hi-IN">Hindi</option>
-            <option value="bn-IN">Bengali</option>
-            <option value="te-IN">Telugu</option>
-            <option value="ta-IN">Tamil</option>
-            <option value="gu-IN">Gujarati</option>
-            <option value="kn-IN">Kannada</option>
-            <option value="ml-IN">Malayalam</option>
-            <option value="mr-IN">Marathi</option>
-            <option value="pa-IN">Punjabi</option>
-          </select>
-
-          <button
-            onClick={() => googleLogout() && setUser(null)}
-            className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-          >
-            Logout
-          </button>
-        </div>
-      )}
-    </div>
+    <GoogleOAuthProvider clientId="453455645323-abcxyz12345.apps.googleusercontent.com">
+      <div className="p-4 text-center min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <h1 className="text-2xl font-bold mb-4">Orbis One Voice</h1>
+        {!userName ? (
+          <GoogleLogin
+            onSuccess={(credentialResponse) => {
+              const decoded = jwt_decode(credentialResponse.credential);
+              setUserName(decoded.name);
+            }}
+            onError={() => console.log('Login Failed')}
+          />
+        ) : (
+          <>
+            <p className="mb-2">Welcome, {userName}!</p>
+            <select
+              className="border p-2 rounded"
+              value={selectedLang}
+              onChange={(e) => setSelectedLang(e.target.value)}
+            >
+              {Object.keys(languages).map((lang) => (
+                <option key={lang} value={lang}>
+                  {lang}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+      </div>
+    </GoogleOAuthProvider>
   );
-}
+};
 
+export default App;
